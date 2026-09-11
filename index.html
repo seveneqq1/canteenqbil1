@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BIL Canteen</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <h1>BIL Canteen</h1>
+        <p class="subtitle">Quick snacks, fast Kaspi checkout</p>
+    </header>
+
+    <!-- Main Content Area -->
+    <main id="main-content">
+
+        <!-- Selection Tab -->
+        <section id="selection-tab" class="tab-content active">
+            <div class="product-grid" id="product-list">
+                <!-- Products will be injected here by JS -->
+            </div>
+        </section>
+
+        <!-- Cart Tab -->
+        <section id="cart-tab" class="tab-content">
+            <div class="cart-container">
+                <h2>Your Cart</h2>
+                <div id="cart-items">
+                    <p class="empty-cart">Your cart is empty.</p>
+                </div>
+
+                <div class="cart-summary">
+                    <h3>Total: <span id="cart-total">0</span> ₸</h3>
+                    <button id="pay-btn" class="pay-btn" disabled>
+                        Pay via Kaspi
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Inventory & purchase history tab -->
+        <section id="admin-tab" class="tab-content">
+            <div class="management-container">
+                <div class="section-heading">
+                    <div>
+                        <h2>Inventory</h2>
+                        <p>Stock is updated after a confirmed Kaspi payment.</p>
+                    </div>
+                    <button id="reset-database" class="text-btn" type="button">Reset demo data</button>
+                </div>
+                <div id="inventory-list" class="inventory-list"></div>
+
+                <div class="history-heading">
+                    <h2>Purchase History</h2>
+                    <p id="history-count">No purchases yet.</p>
+                </div>
+                <div id="purchase-history" class="purchase-history"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <button class="nav-btn active" data-target="selection-tab">
+            <span class="icon">📋</span>
+            <span>Selection</span>
+        </button>
+        <button class="nav-btn" data-target="cart-tab">
+            <span class="icon">🛒</span>
+            <span>Cart <span id="cart-badge" class="badge">0</span></span>
+        </button>
+        <button class="nav-btn" data-target="admin-tab">
+            <span class="icon">📦</span>
+            <span>Stock</span>
+        </button>
+    </nav>
+
+    <!-- Kaspi Payment Modal -->
+    <div id="payment-modal" class="modal">
+        <div class="modal-content">
+            <h3>Kaspi Transfer</h3>
+            <p>Please transfer exactly <strong><span id="modal-total">0</span> ₸</strong> to the following Kaspi number:
+            </p>
+            <h2 class="kaspi-number">+7 777 123 45 67</h2>
+            <p class="small-text">Attach your Kaspi receipt to confirm the order.</p>
+            <label class="receipt-label" for="receipt-upload">Attach receipt</label>
+            <input id="receipt-upload" type="file" accept="image/*,.pdf">
+            <p id="receipt-status" class="receipt-status">No receipt attached.</p>
+            <button id="confirm-payment" class="confirm-btn" disabled>Confirm payment</button>
+            <button id="close-modal" class="close-btn">Cancel</button>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
