@@ -79,7 +79,7 @@ function renderProducts() {
                     const stockClass = product.stock <= 5 ? 'low-stock' : '';
                     return `
             <article class="product-card" data-product-id="${product.id}">
-                <img class="product-image" src="${product.image}" alt="${escapeHtml(product.name)}" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=600&q=80'">
+                <img class="product-image" src="${product.image}" alt="${escapeHtml(product.name)}" loading="lazy">
                 <div>
                     <div class="product-name">${escapeHtml(product.name)}</div>
                     <div class="product-price">${formatMoney(product.price)} ₸</div>
