@@ -42,21 +42,15 @@
             </div>
         </section>
 
-        <!-- Inventory & purchase history tab -->
-        <section id="admin-tab" class="tab-content">
+        <!-- Purchase history tab -->
+        <section id="history-tab" class="tab-content">
             <div class="management-container">
                 <div class="section-heading">
                     <div>
-                        <h2>Inventory</h2>
-                        <p>Stock is updated after a confirmed Kaspi payment.</p>
+                        <h2>Purchase History</h2>
+                        <p id="history-count">No purchases yet.</p>
                     </div>
-                    <button id="reset-database" class="text-btn" type="button">Reset demo data</button>
-                </div>
-                <div id="inventory-list" class="inventory-list"></div>
-
-                <div class="history-heading">
-                    <h2>Purchase History</h2>
-                    <p id="history-count">No purchases yet.</p>
+                    <button id="reset-database" class="text-btn" type="button">Reset saved data</button>
                 </div>
                 <div id="purchase-history" class="purchase-history"></div>
             </div>
@@ -74,9 +68,9 @@
             <span class="icon">🛒</span>
             <span>Cart <span id="cart-badge" class="badge">0</span></span>
         </button>
-        <button class="nav-btn" data-target="admin-tab">
-            <span class="icon">📦</span>
-            <span>Stock</span>
+        <button class="nav-btn" data-target="history-tab">
+            <span class="icon">🧾</span>
+            <span>History</span>
         </button>
     </nav>
 
