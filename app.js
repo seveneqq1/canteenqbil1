@@ -26,18 +26,24 @@ function escapeHtml(value) {
 
 async function loadDatabase() {
     const savedDatabase = localStorage.getItem(DATABASE_KEY);
-    if (savedDatabase) {
-        database = JSON.parse(savedDatabase);
-        return;
-    }
-
     try {
         const response = await fetch('database.json');
         if (!response.ok) throw new Error('Could not load database.json');
-        database = await response.json();
+        const seedDatabase = await response.json();
+        const savedData = savedDatabase ? JSON.parse(savedDatabase) : null;
+        const savedProducts = new Map((savedData?.products || []).map(product => [product.id, product]));
+
+        // Keep already-confirmed stock counts, while adding new menu items and image/category updates.
+        database = {
+            products: seedDatabase.products.map(product => ({
+                ...product,
+                stock: savedProducts.get(product.id)?.stock ?? product.stock
+            })),
+            purchases: savedData?.purchases || seedDatabase.purchases || []
+        };
     } catch (error) {
         console.warn(error);
-        database = { products: [], purchases: [] };
+        database = savedDatabase ? JSON.parse(savedDatabase) : { products: [], purchases: [] };
     }
     saveDatabase();
 }
@@ -59,12 +65,21 @@ function cartTotal() {
 }
 
 function renderProducts() {
-    productList.innerHTML = database.products.map(product => {
-        const isSoldOut = product.stock === 0;
-        const stockClass = product.stock <= 5 ? 'low-stock' : '';
-        return `
+    const productsByCategory = database.products.reduce((groups, product) => {
+        (groups[product.category || 'Other'] ||= []).push(product);
+        return groups;
+    }, {});
+
+    productList.innerHTML = Object.entries(productsByCategory).map(([category, products]) => `
+        <section class="category-section" aria-label="${escapeHtml(category)}">
+            <h2 class="category-title">${escapeHtml(category)}</h2>
+            <div class="category-grid">
+                ${products.map(product => {
+                    const isSoldOut = product.stock === 0;
+                    const stockClass = product.stock <= 5 ? 'low-stock' : '';
+                    return `
             <article class="product-card" data-product-id="${product.id}">
-                <img class="product-image" src="${product.image}" alt="${escapeHtml(product.name)}" loading="lazy">
+                <img class="product-image" src="${product.image}" alt="${escapeHtml(product.name)}" loading="lazy" onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=600&q=80'">
                 <div>
                     <div class="product-name">${escapeHtml(product.name)}</div>
                     <div class="product-price">${formatMoney(product.price)} ₸</div>
@@ -74,7 +89,9 @@ function renderProducts() {
                     ${isSoldOut ? 'Sold out' : 'Add to Cart'}
                 </button>
             </article>`;
-    }).join('');
+                }).join('')}
+            </div>
+        </section>`).join('');
 }
 
 function syncProductButtons() {
