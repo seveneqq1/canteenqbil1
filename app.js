@@ -60,38 +60,31 @@ function cartTotal() {
 
 function renderProducts() {
     productList.innerHTML = database.products.map(product => {
-        const inCart = cartQuantity(product.id);
-        const available = product.stock - inCart;
         const isSoldOut = product.stock === 0;
         const stockClass = product.stock <= 5 ? 'low-stock' : '';
         return `
-            <article class="product-card">
+            <article class="product-card" data-product-id="${product.id}">
                 <img class="product-image" src="${product.image}" alt="${escapeHtml(product.name)}" loading="lazy">
                 <div>
                     <div class="product-name">${escapeHtml(product.name)}</div>
                     <div class="product-price">${formatMoney(product.price)} ₸</div>
-                    <div class="stock-label ${stockClass}">${isSoldOut ? 'Out of stock' : `${available} available`}</div>
+                    <div class="stock-label ${stockClass}">${isSoldOut ? 'Out of stock' : `${product.stock} in stock`}</div>
                 </div>
-                <button class="add-btn" type="button" onclick="addToCart(${product.id})" ${available <= 0 ? 'disabled' : ''}>
-                    ${isSoldOut ? 'Sold out' : available <= 0 ? 'Maximum in cart' : 'Add to Cart'}
+                <button class="add-btn" type="button" data-add-product="${product.id}" onclick="addToCart(${product.id})" ${isSoldOut ? 'disabled' : ''}>
+                    ${isSoldOut ? 'Sold out' : 'Add to Cart'}
                 </button>
             </article>`;
     }).join('');
 }
 
-function renderInventory() {
-    const list = document.getElementById('inventory-list');
-    list.innerHTML = database.products.map(product => {
-        const stockClass = product.stock === 0 ? 'out-of-stock' : product.stock <= 5 ? 'low-stock' : '';
-        return `
-            <div class="inventory-row">
-                <div class="inventory-product">
-                    <img src="${product.image}" alt="" aria-hidden="true">
-                    <span>${escapeHtml(product.name)}</span>
-                </div>
-                <span class="inventory-stock ${stockClass}">${product.stock} in stock</span>
-            </div>`;
-    }).join('');
+function syncProductButtons() {
+    document.querySelectorAll('[data-add-product]').forEach(button => {
+        const productId = Number(button.dataset.addProduct);
+        const product = database.products.find(item => item.id === productId);
+        const hasReachedCartLimit = cartQuantity(productId) >= product.stock;
+        button.disabled = hasReachedCartLimit;
+        button.textContent = product.stock === 0 ? 'Sold out' : hasReachedCartLimit ? 'Maximum in cart' : 'Add to Cart';
+    });
 }
 
 function renderHistory() {
@@ -126,7 +119,7 @@ function updateCart() {
     if (!cart.length) {
         cartItemsContainer.innerHTML = '<p class="empty-cart">Your cart is empty.</p>';
         payBtn.disabled = true;
-        renderProducts();
+        syncProductButtons();
         return;
     }
 
@@ -147,7 +140,7 @@ function updateCart() {
         </div>`;
     }).join('');
     payBtn.disabled = false;
-    renderProducts();
+    syncProductButtons();
 }
 
 window.getCurrentStock = productId => database.products.find(product => product.id === productId)?.stock || 0;
@@ -182,8 +175,7 @@ function setupTabs() {
             document.querySelectorAll('.tab-content').forEach(item => item.classList.remove('active'));
             button.classList.add('active');
             document.getElementById(button.dataset.target).classList.add('active');
-            if (button.dataset.target === 'admin-tab') {
-                renderInventory();
+            if (button.dataset.target === 'history-tab') {
                 renderHistory();
             }
         });
@@ -250,8 +242,9 @@ function confirmPayment() {
     saveDatabase();
     cart = [];
     modal.classList.remove('active');
+    // Stock is changed only here, after receipt attachment and payment confirmation.
+    renderProducts();
     updateCart();
-    renderInventory();
     renderHistory();
     alert('Payment recorded. Thank you for your order!');
 }
@@ -262,16 +255,16 @@ function setupReset() {
         localStorage.removeItem(DATABASE_KEY);
         cart = [];
         await loadDatabase();
+        renderProducts();
         updateCart();
-        renderInventory();
         renderHistory();
     });
 }
 
 async function init() {
     await loadDatabase();
+    renderProducts();
     updateCart();
-    renderInventory();
     renderHistory();
     setupTabs();
     setupModal();
