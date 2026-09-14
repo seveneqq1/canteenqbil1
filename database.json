@@ -1,21 +1,22 @@
 {
   "products": [
     { "id": 1, "name": "Maxi Tea 1.2L", "price": 610, "stock": 20, "category": "Drinks", "image": "product-images/product-1.png" },
-    { "id": 2, "name": "Lays Lime & Pepper 140g", "price": 1100, "stock": 18, "category": "Chips", "image": "product-images/product-2.png" },
+    { "id": 2, "name": "Lay's Chili Lime 140g", "price": 1100, "stock": 18, "category": "Chips", "image": "product-images/product-2.jpg" },
     { "id": 3, "name": "Babyfox Chocolate", "price": 300, "stock": 25, "category": "Chocolate & Sweets", "image": "product-images/product-3.png" },
     { "id": 4, "name": "Ozera Chocolate", "price": 400, "stock": 22, "category": "Chocolate & Sweets", "image": "product-images/product-4.jpg" },
     { "id": 5, "name": "Snickers Bar", "price": 350, "stock": 30, "category": "Chocolate & Sweets", "image": "product-images/product-5.jpg" },
     { "id": 6, "name": "Coca-Cola 0.5L", "price": 450, "stock": 24, "category": "Drinks", "image": "product-images/product-6.jpg" },
-    { "id": 7, "name": "Pringles Original", "price": 1500, "stock": 12, "category": "Chips", "image": "product-images/product-7.png" },
+    { "id": 7, "name": "Lay's Sour Cream & Herbs 140g", "price": 1100, "stock": 18, "category": "Chips", "image": "product-images/product-7.png" },
     { "id": 8, "name": "Tassay Water 0.5L", "price": 200, "stock": 40, "category": "Drinks", "image": "product-images/product-8.png" },
-    { "id": 9, "name": "7Days Croissant", "price": 350, "stock": 16, "category": "Bakery", "image": "product-images/product-9.jpg" },
-    { "id": 10, "name": "Orbit Gum", "price": 250, "stock": 35, "category": "Other", "image": "product-images/product-10.jpg" },
+    { "id": 10, "name": "Orbit Classic Mint", "price": 250, "stock": 35, "category": "Other", "image": "product-images/product-10.jpg" },
     { "id": 11, "name": "Fanta Orange 0.5L", "price": 450, "stock": 20, "category": "Drinks", "image": "product-images/product-11.png" },
     { "id": 12, "name": "Lipton Ice Tea 0.5L", "price": 500, "stock": 18, "category": "Drinks", "image": "product-images/product-12.jpg" },
-    { "id": 13, "name": "Doritos Nacho 100g", "price": 1100, "stock": 15, "category": "Chips", "image": "product-images/product-13.jpg" },
-    { "id": 14, "name": "Cheetos Cheese 85g", "price": 850, "stock": 18, "category": "Chips", "image": "product-images/product-14.png" },
+    { "id": 13, "name": "Lay's Cheese 140g", "price": 1100, "stock": 20, "category": "Chips", "image": "product-images/product-13.jpg" },
+    { "id": 14, "name": "Lay's Crab 140g", "price": 1100, "stock": 20, "category": "Chips", "image": "product-images/product-14.webp" },
     { "id": 15, "name": "Kinder Bueno", "price": 500, "stock": 24, "category": "Chocolate & Sweets", "image": "product-images/product-15.png" },
-    { "id": 16, "name": "Mars Bar", "price": 350, "stock": 26, "category": "Chocolate & Sweets", "image": "product-images/product-16.png" }
+    { "id": 16, "name": "Джумка Wafer Bar", "price": 300, "stock": 25, "category": "Chocolate & Sweets", "image": "product-images/product-16.png" },
+    { "id": 17, "name": "Orbit Strawberry-Banana", "price": 250, "stock": 30, "category": "Other", "image": "product-images/product-17.jpg" },
+    { "id": 18, "name": "Orbit Sweet Mint", "price": 250, "stock": 30, "category": "Other", "image": "product-images/product-18.png" }
   ],
   "purchases": []
 }
