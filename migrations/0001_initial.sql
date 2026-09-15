@@ -36,17 +36,6 @@ CREATE TABLE order_items (
   PRIMARY KEY (order_id, product_id)
 );
 
--- Every order item reduces shared stock inside the same D1 batch. If any item
--- lacks stock, RAISE(ABORT) rolls back the entire order and all stock changes.
-CREATE TRIGGER reduce_stock_before_order_item
-BEFORE INSERT ON order_items
-FOR EACH ROW
-BEGIN
-  SELECT CASE WHEN COALESCE((SELECT stock >= NEW.quantity FROM products WHERE id = NEW.product_id), 0) = 0
-    THEN RAISE(ABORT, 'Insufficient stock') END;
-  UPDATE products SET stock = stock - NEW.quantity WHERE id = NEW.product_id;
-END;
-
 CREATE INDEX orders_by_customer ON orders(customer_id, created_at DESC);
 
 INSERT INTO products (id, name, price, stock, category, image) VALUES
