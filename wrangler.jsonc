@@ -12,7 +12,7 @@
     {
       "binding": "DB",
       "database_name": "canteenqbil1",
-      "database_id": "REPLACE_WITH_YOUR_D1_DATABASE_ID",
+      "database_id": "3a10d82f-701c-4b28-8cd3-8799d7d334a5",
       "migrations_dir": "migrations"
     }
   ]
