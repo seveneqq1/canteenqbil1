@@ -40,9 +40,9 @@ CREATE INDEX orders_by_customer ON orders(customer_id, created_at DESC);
 
 INSERT INTO products (id, name, price, stock, category, image) VALUES
   (1, 'Maxi Tea 1.2L', 610, 20, 'Drinks', 'product-images/product-1.png'),
-  (2, 'Lay''s Chili Lime 140g', 1100, 18, 'Chips', 'product-images/product-2.png'),
+  (2, 'Lay''s Chili Lime 140g', 1100, 18, 'Chips', 'product-images/product-2.jpg'),
   (3, 'Babyfox Chocolate', 300, 25, 'Chocolate & Sweets', 'product-images/product-3.png'),
-  (4, 'Ozera Chocolate', 400, 22, 'Chocolate & Sweets', 'product-images/product-4.png'),
+  (4, 'Ozera Chocolate', 400, 22, 'Chocolate & Sweets', 'product-images/product-4.jpg'),
   (5, 'Snickers Bar', 350, 30, 'Chocolate & Sweets', 'product-images/product-5.jpg'),
   (6, 'Coca-Cola 0.5L', 450, 24, 'Drinks', 'product-images/product-6.jpg'),
   (7, 'Lay''s Sour Cream & Herbs 140g', 1100, 18, 'Chips', 'product-images/product-7.png'),
