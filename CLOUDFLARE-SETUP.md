@@ -1,19 +1,40 @@
-# Cloudflare Pages Deployment Setup
+# Deploy the shared-inventory canteen
 
-Cloudflare Pages is the easiest way to host this static HTML/CSS/JS application for free.
+This version is a Cloudflare Worker with D1, not a static Pages site. D1 holds one shared inventory for every browser. Each browser receives a private, secure session cookie; the history endpoint only returns orders attached to that cookie.
 
-## Option 1: Deploy via GitHub (Recommended)
-1. Push all these files (`index.html`, `style.css`, `app.js`, `.gitignore`) to a new GitHub repository.
-2. Log into the [Cloudflare Dashboard](https://dash.cloudflare.com/).
-3. Navigate to **Workers & Pages** -> **Create application** -> **Pages** -> **Connect to Git**.
-4. Select your GitHub repository.
-5. Under **Build settings**, leave the Framework preset as `None` and the Build command empty.
-6. Set the Build output directory to `/` (the root directory).
-7. Click **Save and Deploy**. Your canteen site will be live on a `*.pages.dev` URL.
+## One-time Cloudflare setup
 
-## Option 2: Deploy via Wrangler CLI (Direct Upload)
-If you want to deploy directly from your terminal (perfect for your M5 Mac environment):
-
-1. Install Wrangler globally via npm:
+1. Install Node.js 20+ and sign in to Cloudflare:
    ```bash
    npm install -g wrangler
+   wrangler login
+   ```
+2. In this folder, create the database:
+   ```bash
+   wrangler d1 create canteenqbil1
+   ```
+3. Copy the `database_id` printed by that command into `wrangler.jsonc`, replacing `REPLACE_WITH_YOUR_D1_DATABASE_ID`.
+4. Create the tables and initial menu stock:
+   ```bash
+   wrangler d1 migrations apply canteenqbil1 --remote
+   ```
+5. Deploy the site and API together:
+   ```bash
+   wrangler deploy
+   ```
+
+Open the Workers URL that Wrangler prints. Do not deploy this version as GitHub Pages or Cloudflare Pages: static hosting cannot run the `/api` endpoints.
+
+## Important behaviour
+
+- Stock is shared and refreshes every 20 seconds (also immediately after an order).
+- D1 reduces stock only once the customer confirms an order. It rejects the entire order if even one product is sold out.
+- Order history is private to the browser session. Clearing browser cookies creates a new history; a customer cannot transfer this history to another device.
+- The receipt currently stores its filename/type/size, just like the old site. It does **not** upload the receipt image. Add Cloudflare R2 plus customer login if you need staff review, multi-device customer history, or stronger identity verification.
+
+## Changing menu stock later
+
+Use the D1 console or Wrangler, for example:
+```bash
+wrangler d1 execute canteenqbil1 --remote --command "UPDATE products SET stock = 25 WHERE id = 1"
+```
