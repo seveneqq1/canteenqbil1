@@ -28,7 +28,7 @@ Open the Workers URL that Wrangler prints. Do not deploy this version as GitHub 
 ## Important behaviour
 
 - Stock is shared and refreshes every 20 seconds (also immediately after an order).
-- D1 reduces stock only once the customer confirms an order. It rejects the entire order if even one product is sold out.
+- D1 atomically reserves stock only once the customer confirms an order. It rejects the entire order if even one product is sold out.
 - Order history is private to the browser session. Clearing browser cookies creates a new history; a customer cannot transfer this history to another device.
 - The receipt currently stores its filename/type/size, just like the old site. It does **not** upload the receipt image. Add Cloudflare R2 plus customer login if you need staff review, multi-device customer history, or stronger identity verification.
 
