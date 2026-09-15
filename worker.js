@@ -72,13 +72,31 @@ async function createOrder(request, db, customerId) {
     const total = [...requested].reduce((sum, [id, quantity]) => sum + prices.get(id) * quantity, 0);
     const orderId = crypto.randomUUID();
 
+    // One conditional UPDATE reserves every requested product together. It changes
+    // zero rows if any product has become unavailable, so two customers cannot
+    // both buy the final item.
+    const stockCase = ids.map(() => 'WHEN ? THEN ?').join(' ');
+    const stockChecks = ids.map(() => '(requested_product.id = ? AND requested_product.stock < ?)').join(' OR ');
+    const reservation = await db.prepare(`
+        UPDATE products AS product
+        SET stock = product.stock - CASE product.id ${stockCase} ELSE 0 END
+        WHERE product.id IN (${ids.map(() => '?').join(',')})
+          AND NOT EXISTS (SELECT 1 FROM products AS requested_product WHERE ${stockChecks})
+    `).bind(
+        ...ids.flatMap(id => [id, requested.get(id)]),
+        ...ids,
+        ...ids.flatMap(id => [id, requested.get(id)])
+    ).run();
+    if (reservation.meta.changes !== ids.length) {
+        return json({ error: 'An item just sold out. Please review your cart.' }, 409);
+    }
+
     try {
         await db.batch([
             db.prepare('INSERT INTO orders (id, customer_id, total, receipt_name, receipt_type, receipt_size) VALUES (?, ?, ?, ?, ?, ?)').bind(orderId, customerId, total, receipt.name, String(receipt.type || 'unknown').slice(0, 100), Math.max(0, Number(receipt.size) || 0)),
             ...[...requested].map(([productId, quantity]) => db.prepare('INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES (?, ?, ?, ?)').bind(orderId, productId, quantity, prices.get(productId)))
         ]);
     } catch (error) {
-        if (String(error.message).includes('Insufficient stock')) return json({ error: 'An item just sold out. Please review your cart.' }, 409);
         throw error;
     }
     return json({ orderId }, 201);
