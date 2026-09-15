@@ -1,0 +1,3 @@
+-- The original deployed asset set uses .jpg for these two files.
+UPDATE products SET image = 'product-images/product-2.jpg' WHERE id = 2;
+UPDATE products SET image = 'product-images/product-4.jpg' WHERE id = 4;
