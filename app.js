@@ -1,5 +1,4 @@
-const DATABASE_KEY = 'bil-canteen-database-v1';
-let database = { products: [], purchases: [] };
+let database = { products: [] };
 let cart = [];
 let attachedReceipt = null;
 
@@ -24,32 +23,21 @@ function escapeHtml(value) {
     return element.innerHTML;
 }
 
-async function loadDatabase() {
-    const savedDatabase = localStorage.getItem(DATABASE_KEY);
-    try {
-        const response = await fetch('database.json');
-        if (!response.ok) throw new Error('Could not load database.json');
-        const seedDatabase = await response.json();
-        const savedData = savedDatabase ? JSON.parse(savedDatabase) : null;
-        const savedProducts = new Map((savedData?.products || []).map(product => [product.id, product]));
-
-        // Keep already-confirmed stock counts, while adding new menu items and image/category updates.
-        database = {
-            products: seedDatabase.products.map(product => ({
-                ...product,
-                stock: savedProducts.get(product.id)?.stock ?? product.stock
-            })),
-            purchases: savedData?.purchases || seedDatabase.purchases || []
-        };
-    } catch (error) {
-        console.warn(error);
-        database = savedDatabase ? JSON.parse(savedDatabase) : { products: [], purchases: [] };
-    }
-    saveDatabase();
+async function api(path, options) {
+    const response = await fetch(path, {
+        headers: { 'Content-Type': 'application/json', ...(options?.headers || {}) },
+        ...options
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || 'Something went wrong.');
+    return data;
 }
 
-function saveDatabase() {
-    localStorage.setItem(DATABASE_KEY, JSON.stringify(database));
+async function loadProducts() {
+    const data = await api('/api/products');
+    database.products = data.products;
+    renderProducts();
+    updateCart();
 }
 
 function productInCart(productId) {
@@ -98,33 +86,33 @@ function syncProductButtons() {
     document.querySelectorAll('[data-add-product]').forEach(button => {
         const productId = Number(button.dataset.addProduct);
         const product = database.products.find(item => item.id === productId);
+        if (!product) return;
         const hasReachedCartLimit = cartQuantity(productId) >= product.stock;
         button.disabled = hasReachedCartLimit;
         button.textContent = product.stock === 0 ? 'Sold out' : hasReachedCartLimit ? 'Maximum in cart' : 'Add to Cart';
     });
 }
 
-function renderHistory() {
+async function renderHistory() {
     const history = document.getElementById('purchase-history');
     const count = document.getElementById('history-count');
-    const purchases = database.purchases || [];
-    count.textContent = purchases.length ? `${purchases.length} recorded purchase${purchases.length === 1 ? '' : 's'}.` : 'No purchases yet.';
-
-    if (!purchases.length) {
-        history.innerHTML = '<p class="empty-history">Confirmed Kaspi orders will appear here.</p>';
-        return;
-    }
-
-    history.innerHTML = [...purchases].reverse().map(purchase => {
-        const time = new Date(purchase.createdAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
-        const items = purchase.items.map(item => `${escapeHtml(item.name)} × ${item.quantity}`).join(', ');
-        return `
-            <article class="history-card">
-                <h3>Order #${purchase.id} · ${formatMoney(purchase.total)} ₸</h3>
+    history.innerHTML = '<p class="empty-history">Loading your orders…</p>';
+    try {
+        const { orders } = await api('/api/orders');
+        count.textContent = orders.length ? `${orders.length} recorded purchase${orders.length === 1 ? '' : 's'}.` : 'No purchases yet.';
+        history.innerHTML = orders.length ? orders.map(order => {
+            const time = new Date(order.createdAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' });
+            const items = order.items.map(item => `${escapeHtml(item.name)} × ${item.quantity}`).join(', ');
+            return `<article class="history-card">
+                <h3>Order #${escapeHtml(order.id.slice(0, 8))} · ${formatMoney(order.total)} ₸</h3>
                 <p>${items}</p>
-                <p>${time} · Receipt: ${escapeHtml(purchase.receipt.name)}</p>
+                <p>${time} · Receipt: ${escapeHtml(order.receiptName)}</p>
             </article>`;
-    }).join('');
+        }).join('') : '<p class="empty-history">Confirmed Kaspi orders will appear here.</p>';
+    } catch (error) {
+        count.textContent = 'Could not load your history.';
+        history.innerHTML = `<p class="empty-history">${escapeHtml(error.message)}</p>`;
+    }
 }
 
 function updateCart() {
@@ -132,71 +120,50 @@ function updateCart() {
     cartBadge.textContent = totalItems;
     cartTotalElement.textContent = formatMoney(cartTotal());
     modalTotal.textContent = formatMoney(cartTotal());
-
     if (!cart.length) {
         cartItemsContainer.innerHTML = '<p class="empty-cart">Your cart is empty.</p>';
         payBtn.disabled = true;
         syncProductButtons();
         return;
     }
-
     cartItemsContainer.innerHTML = cart.map(item => {
-        const cannotIncrease = item.quantity >= window.getCurrentStock(item.productId);
-        return `
-        <div class="cart-item">
-            <div class="cart-item-info">
-                <h4>${escapeHtml(item.name)}</h4>
-                <p>${formatMoney(item.price)} ₸ each</p>
-                <span class="cart-quantity">${item.quantity} of ${item.stockAtAdd} available</span>
-            </div>
-            <div class="item-controls">
-                <button class="quantity-btn" type="button" aria-label="Remove one ${escapeHtml(item.name)}" onclick="changeQuantity(${item.productId}, -1)">−</button>
-                <strong>${item.quantity}</strong>
-                <button class="quantity-btn" type="button" aria-label="Add one ${escapeHtml(item.name)}" onclick="changeQuantity(${item.productId}, 1)" ${cannotIncrease ? 'disabled' : ''}>+</button>
-            </div>
-        </div>`;
+        const cannotIncrease = item.quantity >= getCurrentStock(item.productId);
+        return `<div class="cart-item"><div class="cart-item-info"><h4>${escapeHtml(item.name)}</h4><p>${formatMoney(item.price)} ₸ each</p><span class="cart-quantity">${item.quantity} selected</span></div><div class="item-controls"><button class="quantity-btn" type="button" onclick="changeQuantity(${item.productId}, -1)">−</button><strong>${item.quantity}</strong><button class="quantity-btn" type="button" onclick="changeQuantity(${item.productId}, 1)" ${cannotIncrease ? 'disabled' : ''}>+</button></div></div>`;
     }).join('');
     payBtn.disabled = false;
     syncProductButtons();
 }
 
-window.getCurrentStock = productId => database.products.find(product => product.id === productId)?.stock || 0;
+function getCurrentStock(productId) {
+    return database.products.find(product => product.id === productId)?.stock || 0;
+}
 
-window.addToCart = function (productId) {
+window.addToCart = productId => {
     const product = database.products.find(item => item.id === productId);
     if (!product || cartQuantity(productId) >= product.stock) return;
-
     const existingItem = productInCart(productId);
-    if (existingItem) {
-        existingItem.quantity += 1;
-    } else {
-        cart.push({ productId, name: product.name, price: product.price, quantity: 1, stockAtAdd: product.stock });
-    }
+    if (existingItem) existingItem.quantity += 1;
+    else cart.push({ productId, name: product.name, price: product.price, quantity: 1 });
     updateCart();
 };
 
-window.changeQuantity = function (productId, adjustment) {
+window.changeQuantity = (productId, adjustment) => {
     const item = productInCart(productId);
     if (!item) return;
-    const stock = window.getCurrentStock(productId);
     const nextQuantity = item.quantity + adjustment;
     if (nextQuantity <= 0) cart = cart.filter(cartItem => cartItem.productId !== productId);
-    else if (nextQuantity <= stock) item.quantity = nextQuantity;
+    else if (nextQuantity <= getCurrentStock(productId)) item.quantity = nextQuantity;
     updateCart();
 };
 
 function setupTabs() {
-    document.querySelectorAll('.nav-btn').forEach(button => {
-        button.addEventListener('click', () => {
-            document.querySelectorAll('.nav-btn').forEach(item => item.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(item => item.classList.remove('active'));
-            button.classList.add('active');
-            document.getElementById(button.dataset.target).classList.add('active');
-            if (button.dataset.target === 'history-tab') {
-                renderHistory();
-            }
-        });
-    });
+    document.querySelectorAll('.nav-btn').forEach(button => button.addEventListener('click', () => {
+        document.querySelectorAll('.nav-btn').forEach(item => item.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(item => item.classList.remove('active'));
+        button.classList.add('active');
+        document.getElementById(button.dataset.target).classList.add('active');
+        if (button.dataset.target === 'history-tab') renderHistory();
+    }));
 }
 
 function resetReceipt() {
@@ -207,85 +174,44 @@ function resetReceipt() {
 }
 
 function setupModal() {
-    payBtn.addEventListener('click', () => {
-        resetReceipt();
-        modal.classList.add('active');
-    });
-
+    payBtn.addEventListener('click', () => { resetReceipt(); modal.classList.add('active'); });
     receiptUpload.addEventListener('change', () => {
         const file = receiptUpload.files[0];
         if (!file) return resetReceipt();
-        const maxSize = 10 * 1024 * 1024;
-        if (file.size > maxSize) {
-            receiptStatus.textContent = 'Please select a receipt smaller than 10 MB.';
-            receiptUpload.value = '';
-            return;
-        }
+        if (file.size > 10 * 1024 * 1024) { receiptStatus.textContent = 'Please select a receipt smaller than 10 MB.'; receiptUpload.value = ''; return; }
         attachedReceipt = { name: file.name, type: file.type || 'unknown', size: file.size };
         receiptStatus.textContent = `Attached: ${file.name}`;
         confirmPaymentBtn.disabled = false;
     });
-
     document.getElementById('close-modal').addEventListener('click', () => modal.classList.remove('active'));
     confirmPaymentBtn.addEventListener('click', confirmPayment);
 }
 
-function confirmPayment() {
+async function confirmPayment() {
     if (!attachedReceipt || !cart.length) return;
-
-    for (const item of cart) {
-        const product = database.products.find(product => product.id === item.productId);
-        if (!product || product.stock < item.quantity) {
-            alert(`${item.name} no longer has enough stock. Please update your cart.`);
-            modal.classList.remove('active');
-            updateCart();
-            return;
-        }
-    }
-
-    const purchase = {
-        id: String(Date.now()).slice(-8),
-        createdAt: new Date().toISOString(),
-        total: cartTotal(),
-        items: cart.map(({ productId, name, price, quantity }) => ({ productId, name, price, quantity })),
-        receipt: attachedReceipt
-    };
-    cart.forEach(item => {
-        const product = database.products.find(product => product.id === item.productId);
-        product.stock -= item.quantity;
-    });
-    database.purchases = database.purchases || [];
-    database.purchases.push(purchase);
-    saveDatabase();
-    cart = [];
-    modal.classList.remove('active');
-    // Stock is changed only here, after receipt attachment and payment confirmation.
-    renderProducts();
-    updateCart();
-    renderHistory();
-    alert('Payment recorded. Thank you for your order!');
-}
-
-function setupReset() {
-    document.getElementById('reset-database').addEventListener('click', async () => {
-        if (!confirm('Reset stock and delete all saved purchase history on this device?')) return;
-        localStorage.removeItem(DATABASE_KEY);
+    confirmPaymentBtn.disabled = true;
+    try {
+        await api('/api/orders', { method: 'POST', body: JSON.stringify({ items: cart.map(({ productId, quantity }) => ({ productId, quantity })), receipt: attachedReceipt }) });
         cart = [];
-        await loadDatabase();
-        renderProducts();
+        modal.classList.remove('active');
+        await loadProducts();
+        await renderHistory();
+        alert('Payment submitted. Thank you for your order!');
+    } catch (error) {
+        alert(`${error.message} Stock has been refreshed.`);
+        await loadProducts();
         updateCart();
-        renderHistory();
-    });
+    } finally {
+        confirmPaymentBtn.disabled = false;
+    }
 }
 
 async function init() {
-    await loadDatabase();
-    renderProducts();
-    updateCart();
-    renderHistory();
+    try { await loadProducts(); } catch (error) { productList.innerHTML = `<p class="empty-history">${escapeHtml(error.message)}</p>`; }
     setupTabs();
     setupModal();
-    setupReset();
+    setInterval(() => loadProducts().catch(() => {}), 20000);
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) loadProducts().catch(() => {}); });
 }
 
 init();
